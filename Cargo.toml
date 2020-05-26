@@ -1,0 +1,33 @@
+[package]
+authors = ["Volker Kempert <volker.kempert@almedso.de>"]
+edition = "2018"
+readme = "README.md"
+name = "stm32l053c8t6-discovery"
+version = "0.1.0"
+
+[dependencies.stm32l0xx-hal]
+version = "0.6.2"
+features = ["stm32l0x3", "rt"]
+
+#[dependencies.stm32l0]
+#version = "0.11.0"
+#features = ["stm32l0x3", "rt"]
+
+#[dependencies]
+#cortex-m = "^0.6.2"
+#cortex-m-rt = "^0.6.10"
+#cortex-m-semihosting = "^0.3.3"
+#panic-semihosting = "^0.5.1"
+#panic-halt = "^0.2.0"
+
+
+[dev-dependencies]
+cortex-m-rt = "^0.6.10"
+cortex-m-semihosting = "^0.3.3"
+panic-halt = "^0.2.0"
+
+
+[profile.release]
+codegen-units = 1 # better optimizations
+debug = true # symbols are nice and they don't increase the size on Flash
+lto = true # better optimizations
