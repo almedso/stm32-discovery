@@ -56,6 +56,7 @@ $ rustup target add thumbv6m-none-eabi thumbv7m-none-eabi thumbv7em-none-eabi th
 
 ``` console
 $ cargo build --example panic
+$ cargo run --example led
 ```
 
 ## Flashing
@@ -63,7 +64,7 @@ $ cargo build --example panic
 check open ocd first after setting u-dev rules and connecting the board properly.
 
 ``` console
-$ openocd -f interface/stlink-v2-1.cfg -f board/stm32l0discovery.cfg
+$ ./openocd_flash.sh target/thumbv6m-none-eabi/release/examples/hello
 ```
 
 next let cargo take over ...

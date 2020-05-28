@@ -13,8 +13,8 @@
 //! In order to make this work, we lose the convenience of having a default target that isn't the
 //! host.
 //!
-//! cargo build --example test_on_host --target thumbv7m-none-eabi
-//! cargo test --example test_on_host
+//! cargo build --example test_on_host
+//! cargo test --example test_on_host --target x86_64-unknown-linux-gnu
 
 #![cfg_attr(test, allow(unused_imports))]
 
