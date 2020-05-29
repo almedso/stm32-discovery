@@ -1,3 +1,5 @@
+[thumbv6m-none-eabi]
+
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
 runner = "gdb-multiarch -q -x openocd.gdb"
 rustflags = [ "-C", "link-arg=-Tlink.x",]

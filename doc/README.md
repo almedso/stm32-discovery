@@ -16,6 +16,13 @@ List toolchains (including nightly's)
 $ rustup target list --toolchain nightly
 ```
 
+# Additional Information
+
+* testing uses the host target as default
+* requires rust standard library
+
+
+
 
 References:
 * https://github.com/rust-lang/rust/issues/63519

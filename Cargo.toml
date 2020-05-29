@@ -7,12 +7,15 @@ version = "0.1.0"
 
 
 [dependencies]
+embedded-hal = { version = "^0.2.3", features = ["unproven"]}
 nb = "0.1.2"
 cortex-m = "^0.6.2"
 cortex-m-rt = "^0.6.10"
 panic-halt = "^0.2.0"
 cortex-m-rtfm = "0.5.1"
 stm32l0xx-hal = { version = "0.6.2", features = ["stm32l0x3", "io-STM32L051", "rt"] }
+embedded-graphics = { version = "0.6.1", optional = true}
+epd-gde021a1 = { path = "epd-gde021a1", feature = "graphics" }
 
 
 [dev-dependencies]
@@ -25,3 +28,8 @@ panic-semihosting = "^0.5.0"
 codegen-units = 1 # better optimizations
 debug = true # symbols are nice and they don't increase the size on Flash
 lto = true # better optimizations
+
+[features]
+default = ["graphics"]
+
+graphics = ["embedded-graphics"]
