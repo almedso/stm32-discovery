@@ -48,8 +48,8 @@ fn main() -> ! {
     let mut power = gpiob.pb10.into_push_pull_output();
 
     // The SPI
-    let mosi = gpiob.pb5; // .into_alternate_af5();
-    let clk = gpiob.pb3; // .into_alternate_af5();
+    let mosi = gpiob.pb5;
+    let clk = gpiob.pb3;
     let spi = dp.SPI1.spi((clk, NoMiso, mosi),
                             MODE_0, 1_000_000.hz(), &mut rcc);
 
