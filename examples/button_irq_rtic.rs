@@ -1,10 +1,18 @@
 #![deny(unsafe_code)]
 #![no_main]
 #![no_std]
+///
+/// Discovery board
+///
+/// ## Notes
+///
+/// * The discovery board just has 4 hw breakpoints, those are easily eaten up
+///   by semihosting -> thats why we do not use semi hosting here
+/// 
 
 extern crate panic_halt;
 
-use rtfm::app;
+use rtic::app;
 #[allow(unused_imports)]
 use stm32l0xx_hal::{
     exti::{TriggerEdge, Exti, GpioLine, ExtiLine},
@@ -20,6 +28,7 @@ const APP: () = {
     struct Resources {
         led: gpiob::PB4<Output<PushPull>>,
         exti: Exti,
+        timer: Timer<pac::TIM2>,
     }
 
     #[init]
