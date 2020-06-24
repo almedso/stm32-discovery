@@ -23,8 +23,8 @@ fn main() -> ! {
     let gpioa = dp.GPIOA.split(&mut rcc);
     let gpiob = dp.GPIOB.split(&mut rcc);
 
-    // Configure PA0 as input.
-    let button = gpioa.pa0.into_pull_up_input();
+      let button = gpioa.pa0.into_pull_up_input();  // Configure PA0 as input.
+
 
     // Configure PB4 as output.
     let mut led = gpiob.pb4.into_push_pull_output();

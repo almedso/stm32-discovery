@@ -1,104 +1,97 @@
 #![deny(unsafe_code)]
-#![deny(warnings)]
+#![allow(warnings)]
 #![no_main]
 #![no_std]
 
-use panic_halt as _;
+// use panic_halt as _;
+use panic_semihosting as _;
+use cortex_m_semihosting::hprintln;
 
 use rtic::app;
-#[allow(unused_imports)]
 
-use stm32l0xx_hal::{
-    exti::{TriggerEdge, Exti, GpioLine, ExtiLine},
-    gpio::*,
-    pac,
-    prelude::*,
-    rcc::Config,
-    syscfg::SYSCFG,
-    timer::Timer,
+use embedded_hal::digital::v2::{InputPin, OutputPin};
+
+use stm32l053c8t6_discovery::board::{
+    Board,
+    TimerInterrupt,
+    Button,
+    Led,
+    board_init,
 };
 
+use debounced_pin::prelude::*;
+use debounced_pin::ActiveHigh;
 
+
+// #[app(device = stm32l0::stm32l0x3, peripherals = true)]
 #[app(device = stm32l0xx_hal::pac, peripherals = true)]
 const APP: () = {
     struct Resources {
-        led: gpiob::PB4<Output<PushPull>>,
-        exti: Exti,
-        timer: Timer<pac::TIM2>,
+        // morse: MorseDevice,
+        timer: TimerInterrupt,
+        button: Button,
+        led: Led
     }
 
-    #[init]
+    #[init(spawn = [toggle_led])]
     fn init(ctx: init::Context) -> init::LateResources {
         let device = ctx.device;
+        let b = board_init(device);
+        hprintln!("init").unwrap();
 
-        // Configure the clock.
-        let mut rcc = device.RCC.freeze(Config::hsi16());
-
-        // Acquire the GPIO peripherals.
-        // This also enables the clock for GPIO in the RCC register.
-        let gpioa = device.GPIOA.split(&mut rcc);
-        let gpiob = device.GPIOB.split(&mut rcc);
-
-        // Configure the green user LED.
-        let mut led = gpiob.pb4.into_push_pull_output();
-        led.set_high().unwrap();
-
-        // Configure the user button as interrupt
-        let button = gpioa.pa0.into_pull_up_input();
-        let mut syscfg = SYSCFG::new(device.SYSCFG, &mut rcc);
-        let mut exti = Exti::new(device.EXTI);
-
-        // Configure the timer.
-        let mut timer = device.TIM2.timer(1.hz(), &mut rcc);
-        timer.listen();
-
-        // Configure the external interrupt on the falling edge for the pin 0.
-        let line = GpioLine::from_raw_line(button.pin_number()).unwrap();
-        exti.listen_gpio(&mut syscfg, button.port(), line, TriggerEdge::Falling);
-
-        // Return the initialized resources.
-        init::LateResources { led, exti, timer }
+        init::LateResources { timer: b.timer, button: b.button, led: b.led }
     }
 
 
     #[idle]
     fn idle(_: idle::Context) -> ! {
+        hprintln!("idle").unwrap();
         loop {}
     }
 
-    #[task(binds=EXTI0_1, resources = [led, exti])]
-    fn EXTI0_1(ctx: EXTI0_1::Context) {
+    #[task(binds = TIM2, resources = [button, timer, led ], spawn = [toggle_led])]
+    fn TIM2(ctx: TIM2::Context) {
         static mut STATE: bool = false;
-
-        // Clear the interrupt flag.
-        Exti::unpend(GpioLine::from_raw_line(0).unwrap());
-
-        // Change the LED state on each interrupt.
-        if *STATE {
-            ctx.resources.led.set_low().unwrap();
-            *STATE = false;
-        } else {
-            ctx.resources.led.set_high().unwrap();
-            *STATE = true;
+        static mut LAST_STATE: bool = false;
+        match ctx.resources.button.update().unwrap() {
+            // Pin is not active.
+            DebounceState::NotActive => *LAST_STATE = false,
+            // Pin was reset or is not active in general.
+            DebounceState::Reset => return,
+            // Pin is active but still debouncing.
+            DebounceState::Debouncing => return,
+            // Pin is active and debounced.
+            DebounceState::Active => {
+                if ! *LAST_STATE {
+                    *LAST_STATE = true;
+                    hprintln!("Button pressed").unwrap();
+                    if *STATE {
+                        ctx.resources.led.set_low().unwrap();
+                    } else {
+                        ctx.resources.led.set_high().unwrap();
+                    }
+                    *STATE = ! *STATE;
+                }
+            },
         }
     }
 
-    #[task(binds = TIM2, resources = [led, timer])]
-    fn TIM2(ctx: TIM2::Context) {
+    #[task(resources = [led])]
+    fn toggle_led(ctx: toggle_led::Context) {
         static mut STATE: bool = false;
-        static mut message: [ char: 80 ];
-
-        // Clear the interrupt flag.
-        ctx.resources.timer.clear_irq();
-
-        // Change the LED state on each interrupt.
+        hprintln!("Toggle LED").unwrap();
         if *STATE {
             ctx.resources.led.set_low().unwrap();
-            *STATE = false;
         } else {
             ctx.resources.led.set_high().unwrap();
-            *STATE = true;
         }
+        *STATE = ! *STATE;
+    }
+
+    // Interrupt handlers used to dispatch software tasks
+    extern "C" {
+        fn USART1();
+        // fn LCD();
     }
 
 };
