@@ -12,13 +12,16 @@ use stm32l053c8t6_discovery::board::board_init;
 
 extern crate embedded_graphics;
 use embedded_graphics::{
-    pixelcolor::BinaryColor,
+    pixelcolor::{BinaryColor, Gray2},
     style::{PrimitiveStyle, TextStyle},
     primitives::Circle,
     fonts::{Font6x8, Text},
     prelude::*,
 };
 
+use stm32l053c8t6_discovery::view::{
+    SpotTemperatureWidget,
+};
 
 #[entry]
 fn main() -> ! {
@@ -65,6 +68,9 @@ fn main() -> ! {
     let elem = Text::new("Rust", Point::new(1, 44))
         .into_styled(TextStyle::new(Font6x8, BinaryColor::On));
     elem.draw(&mut disp).unwrap();
+
+    let temp_widget = SpotTemperatureWidget::<Gray2>::new(23);
+    temp_widget.draw(&mut disp).unwrap();
 
     hprintln!("** Refresh display").unwrap();
 

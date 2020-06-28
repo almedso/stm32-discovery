@@ -25,11 +25,25 @@ use embedded_graphics::drawable::Drawable;
 
 use stm32l053c8t6_discovery::view::{
     SpotTemperatureWidget,
+    ButtonWidget,
 };
 
 use debounced_pin::prelude::*;
 use debounced_pin::ActiveHigh;
 use epd_gde021a1::GDE021A1;
+
+use embedded_graphics::{
+    // drawable::Drawable,
+    // egrectangle, egtext,
+    // text_style,
+    // fonts::{Font6x8, Text},
+    geometry::Point,
+    pixelcolor::{Gray2, },
+    prelude::*,
+    // primitives::Line,
+    // style::{PrimitiveStyle, TextStyle},
+    // primitive_style,
+};
 
 
 #[app(device = stm32l0xx_hal::pac, peripherals = true)]
@@ -54,15 +68,29 @@ const APP: () = {
         power.set_low().unwrap();
 
         // initialize the display
-        epd.init(&mut b.delay).unwrap();
+        let mut delay = b.delay;
+        epd.init(&mut delay).unwrap();
 
         hprintln!("** Display initialized").unwrap();
 
         // all pixels turn white
         epd.clear();
 
-        let mut temp_widget = SpotTemperatureWidget::new(23);
+        // draw some fancy stuff
+        // let button = ButtonWidget {
+        //     top_left: Point::new(1,1),
+        //     bottom_right: Point::new(100, 50),
+        //     bg_color: Gray2::WHITE,
+        //     fg_color: Gray2::BLACK,
+        //     text: "Click me!",
+        // };
+        // let button = ButtonWidget::<Gray2>::new();
+        // button.draw(&mut epd).unwrap();
+
+        let mut temp_widget = SpotTemperatureWidget::<Gray2>::new(23);
         temp_widget.draw(&mut epd).unwrap();
+
+        epd.refresh(&mut delay).unwrap();
 
         init::LateResources {
             timer: b.timer,

@@ -15,8 +15,8 @@ cortex-m-rtic = "^0.5.3"
 stm32l0 =  { version = "0.11.0", features = ["stm32l0x3", "rt"] }
 stm32l0xx-hal = { version = "0.6.2", features = ["stm32l0x3", "io-STM32L051", "rt"] }
 embedded-graphics = { version = "0.6.1", optional = true}
-epd-gde021a1 = { version = "^0.2.1" }
-# epd-gde021a1 = { path = "epd-gde021a1" }
+# epd-gde021a1 = { version = "^0.2.1" }
+epd-gde021a1 = { path = "epd-gde021a1" }
 debounced-pin = "0.3.0"
 cortex-m-semihosting = "^0.3.3"
 panic-semihosting = "^0.5.0"
