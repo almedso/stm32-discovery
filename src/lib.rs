@@ -1,11 +1,15 @@
 #![deny(unsafe_code)]
-#![deny(warnings)]
+#![allow(warnings)]
+// #![deny(warnings)]
 #![no_std]
 
+// the board configuration
 pub mod board;
 
-pub mod my_morse {
+// application context driver for display
+pub mod display;
 
-    // use embedded_morse::Morse;
 
-}  // mod morse
+// views to render on the display
+pub mod view;
+

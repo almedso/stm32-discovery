@@ -2,69 +2,47 @@
 #![no_std]
 
 
-extern crate panic_halt;
+use panic_semihosting as _;
+use cortex_m_semihosting::hprintln;
 
 use cortex_m_rt::entry;
-use stm32l0xx_hal::{
-    pac,
-    gpio::*,
-    prelude::*,
-    spi::*,
-    rcc::{Config,RccExt},
-};
-
-use epd_gde021a1;
-
+use embedded_hal::digital::v2::OutputPin;
+use epd_gde021a1::GDE021A1;
+use stm32l053c8t6_discovery::board::board_init;
 
 extern crate embedded_graphics;
 use embedded_graphics::{
     pixelcolor::BinaryColor,
     style::{PrimitiveStyle, TextStyle},
     primitives::Circle,
-    fonts::{Font12x16, Font6x8, Text},
+    fonts::{Font6x8, Text},
     prelude::*,
 };
 
-use epd_gde021a1::GDE021A1;
 
 #[entry]
 fn main() -> ! {
-    let dp = pac::Peripherals::take().unwrap();
-    let cp = cortex_m::Peripherals::take().unwrap();
+    hprintln!("** Started").unwrap();
 
-    // Configure the clock.
-    let mut rcc = dp.RCC.freeze(Config::hsi16());
+    // let device = pac::Peripherals::take().unwrap();
+    let b = board_init(None, None);
 
-    // Acquire the GPIOx peripheral.
-    // This also enables the clock for GPIOx in the RCC register.
-    let gpioa = dp.GPIOA.split(&mut rcc);
-    let gpiob = dp.GPIOB.split(&mut rcc);
+    hprintln!("** Board init done").unwrap();
 
-    // The GPIO's
-    let chip_sel = gpioa.pa15.into_push_pull_output();
-    let data_cmd = gpiob.pb11.into_push_pull_output();
-    let reset = gpiob.pb2.into_push_pull_output();
-    let busy = gpiob.pb8.into_pull_up_input();
-    let mut power = gpiob.pb10.into_push_pull_output();
+    let mut disp =  GDE021A1::new(b.spi, b.reset, Some(b.chip_sel), b.data_cmd, b.busy);
 
-    // The SPI
-    let mosi = gpiob.pb5;
-    let clk = gpiob.pb3;
-    let spi = dp.SPI1.spi((clk, NoMiso, mosi),
-                            MODE_0, 1_000_000.hz(), &mut rcc);
+    hprintln!("** Display created").unwrap();
 
-    // the time delay
-    let mut delay = cp.SYST.delay(rcc.clocks);
+    let mut delay = b.delay;
 
-    // and finally the display structure
-    let mut disp =  GDE021A1::new(spi, reset, Some(chip_sel), data_cmd, busy);
-
-    // power on the on the display chip
+    // init_chip(&display).expect("could not init display");
+    let mut power = b.power;
     power.set_low().unwrap();
 
     // initialize the display
-    disp.init(&mut delay).expect("could not init display");
-    // disp.alt_init(&mut delay).expect("could not init display");
+    disp.init(&mut delay).unwrap();
+
+    hprintln!("** Display initialized").unwrap();
 
     // all pixels turn white
     disp.clear();
@@ -72,23 +50,27 @@ fn main() -> ! {
     // draw some fancy stuff
     let elem =  Circle::new(Point::new(140, 36), 25)
          .into_styled(PrimitiveStyle::with_fill(BinaryColor::On));
-    elem.draw(&mut disp);
+    elem.draw(&mut disp).unwrap();
 
     // Draw some text
     let elem = Text::new("Power minimized ", Point::new(1, 8))
         .into_styled(TextStyle::new(Font6x8, BinaryColor::On));
-    elem.draw(&mut disp);
+    elem.draw(&mut disp).unwrap();
     let elem = Text::new("and safely", Point::new(1, 20))
         .into_styled(TextStyle::new(Font6x8, BinaryColor::On));
-        elem.draw(&mut disp);
+        elem.draw(&mut disp).unwrap();
     let elem = Text::new("implemented in", Point::new(1, 32))
         .into_styled(TextStyle::new(Font6x8, BinaryColor::On));
-    elem.draw(&mut disp);
+    elem.draw(&mut disp).unwrap();
     let elem = Text::new("Rust", Point::new(1, 44))
-        .into_styled(TextStyle::new(Font12x16, BinaryColor::On));
-    elem.draw(&mut disp);
+        .into_styled(TextStyle::new(Font6x8, BinaryColor::On));
+    elem.draw(&mut disp).unwrap();
 
-    disp.refresh(&mut delay).expect("could not flush display");
+    hprintln!("** Refresh display").unwrap();
+
+    disp.refresh(&mut delay).unwrap();
+
+    hprintln!("** Enter loop").unwrap();
 
     loop {
         continue;

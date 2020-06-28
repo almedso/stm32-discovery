@@ -12,44 +12,75 @@ use rtic::app;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 
 use stm32l053c8t6_discovery::board::{
-    Board,
-    TimerInterrupt,
-    Button,
-    Led,
     board_init,
+    Board,
+    Button,
+    EpaperDevice,
+    LedGreen,
+    TimerInterrupt,
+};
+// use stm32l053c8t6_discovery::display::Display;
+
+use embedded_graphics::drawable::Drawable;
+
+use stm32l053c8t6_discovery::view::{
+    SpotTemperatureWidget,
 };
 
 use debounced_pin::prelude::*;
 use debounced_pin::ActiveHigh;
+use epd_gde021a1::GDE021A1;
 
 
-// #[app(device = stm32l0::stm32l0x3, peripherals = true)]
 #[app(device = stm32l0xx_hal::pac, peripherals = true)]
 const APP: () = {
     struct Resources {
-        // morse: MorseDevice,
         timer: TimerInterrupt,
         button: Button,
-        led: Led
+        led: LedGreen,
+        epd: EpaperDevice,
+        // display: Display<'e, 'pwr, 'dly>,
     }
 
     #[init(spawn = [toggle_led])]
     fn init(ctx: init::Context) -> init::LateResources {
         let device = ctx.device;
-        let b = board_init(device);
-        hprintln!("init").unwrap();
+        hprintln!("** Init started").unwrap();
+        let b = board_init(Some(device), None);
 
-        init::LateResources { timer: b.timer, button: b.button, led: b.led }
+        hprintln!("** Init done").unwrap();
+        let mut epd = GDE021A1::new(b.spi, b.reset, Some(b.chip_sel), b.data_cmd, b.busy);
+        let mut power = b.power;
+        power.set_low().unwrap();
+
+        // initialize the display
+        epd.init(&mut b.delay).unwrap();
+
+        hprintln!("** Display initialized").unwrap();
+
+        // all pixels turn white
+        epd.clear();
+
+        let mut temp_widget = SpotTemperatureWidget::new(23);
+        temp_widget.draw(&mut epd).unwrap();
+
+        init::LateResources {
+            timer: b.timer,
+            button: b.button,
+            led: b.led_green,
+            epd,
+//            epd: GDE021A1::new(b.spi, b.reset, Some(b.chip_sel), b.data_cmd, b.busy),
+        }
     }
 
 
     #[idle]
     fn idle(_: idle::Context) -> ! {
-        hprintln!("idle").unwrap();
+        hprintln!("** Idle").unwrap();
         loop {}
     }
 
-    #[task(binds = TIM2, resources = [button, timer, led ], spawn = [toggle_led])]
+    #[task(binds = TIM2, resources = [button, timer, led, epd ], spawn = [toggle_led])]
     fn TIM2(ctx: TIM2::Context) {
         static mut STATE: bool = false;
         static mut LAST_STATE: bool = false;
@@ -64,7 +95,7 @@ const APP: () = {
             DebounceState::Active => {
                 if ! *LAST_STATE {
                     *LAST_STATE = true;
-                    hprintln!("Button pressed").unwrap();
+                    hprintln!("** Button pressed").unwrap();
                     if *STATE {
                         ctx.resources.led.set_low().unwrap();
                     } else {
@@ -72,6 +103,9 @@ const APP: () = {
                     }
                     *STATE = ! *STATE;
                 }
+                // let mut temp_widget = SpotTemperatureWidget::new(23);
+                // temp_widget.draw(ctx.resources.epd).unwrap();
+
             },
         }
     }
